@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Callable
+import scipy.stats as stat
 
 import Option as op
 import UsualPayoffs
+import model as mo
 
 class EuropeanOption(op.Option):
 
@@ -19,7 +21,11 @@ class EuropeanCallOption(EuropeanOption):
         self.closed_formula = closed_formula
 
     def compute_price(self):
-        return(-1)
+        if(type(self.model) == mo.BlackScholes):
+            d1,d2 = self.model.compute_d1_d2(strike = self.K, t = self.t, T = self.T)
+            price = self.S0*np.exp(-self.model.q * (self.T - self.t )) * stat.norm.cdf(d1) - self.K*np.exp(-self.model.r*(self.T - self.t )) * stat.norm.cdf(d2)
+            return(price)
+
 
     def plot_payoff(self):
         x_min = np.minimum(self.S0,self.K)/2
@@ -48,3 +54,9 @@ class EuropeanPutOption(EuropeanOption):
         plt.grid()
         plt.title(f"payoff PUT : K = {self.K}")
         plt.show()
+
+    def compute_price(self):
+        if(type(self.model) == mo.BlackScholes):
+            d1,d2 = self.model.compute_d1_d2(strike = self.K, t = self.t, T = self.T)
+            price =  self.K*np.exp(-self.model.r*(self.T - self.t )) * stat.norm.cdf(-d2) - self.S0*np.exp(-self.model.q * (self.T - self.t )) * stat.norm.cdf(-d1)
+            return(price)
