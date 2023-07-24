@@ -20,6 +20,9 @@ class EuropeanCallOption(EuropeanOption):
         self.K = K
         self.closed_formula = closed_formula
 
+    def __str__(self):
+        return "CALL"
+
     def compute_price(self):
         if(type(self.model) == mo.BlackScholes):
             d1,d2 = self.model.compute_d1_d2(strike = self.K, t = self.t, T = self.T)
@@ -44,6 +47,8 @@ class EuropeanPutOption(EuropeanOption):
         super().__init__(payoff = UsualPayoffs.PAYOFF_PUT,model = model, t = t, S0 = S0, T = T, r = r, q = q, sigma = sigma)
         self.K = K
 
+    def __str__(self):
+        return "PUT"
     def plot_payoff(self):
         x_min = np.minimum(self.S0,self.K)/2
         x_max = np.maximum(self.S0,self.K)*4/3
