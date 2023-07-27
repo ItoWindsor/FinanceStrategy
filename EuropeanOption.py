@@ -13,6 +13,20 @@ class EuropeanOption(op.Option):
         super().__init__(payoff = payoff,model = model, t = t, S0 = S0, T = T, r = r, q = q, sigma = sigma, name = name)
 
 
+    def compute_price(self) -> float:
+        pass
+    def compute_rho(self) -> float:
+        pass
+
+    def compute_gamma(self) -> float:
+        pass
+
+    def compute_delta(self) -> float:
+        pass
+
+    def compute_vega(self) -> float:
+        pass
+
 class EuropeanCallOption(EuropeanOption):
 
     def __init__(self,model : str,S0 : float, K : float, t : float, T : float, r : float, q : float, sigma : float, closed_formula : bool = True):
@@ -23,11 +37,14 @@ class EuropeanCallOption(EuropeanOption):
     def __str__(self):
         return "CALL"
 
-    def compute_price(self):
-        if(type(self.model) == mo.BlackScholes):
-            d1,d2 = self.model.compute_d1_d2(strike = self.K, t = self.t, T = self.T)
-            price = self.S0*np.exp(-self.model.q * (self.T - self.t )) * stat.norm.cdf(d1) - self.K*np.exp(-self.model.r*(self.T - self.t )) * stat.norm.cdf(d2)
-            return(price)
+    def compute_price(self,S0_arr : np.array = None):
+        if type(self.model) == mo.BlackScholes:
+            d1,d2 = self.model.compute_d1_d2(strike = self.K, t = self.t, T = self.T, S0_arr = S0_arr)
+            if S0_arr is None:
+                price = self.S0*np.exp(-self.model.q * (self.T - self.t )) * stat.norm.cdf(d1) - self.K*np.exp(-self.model.r*(self.T - self.t )) * stat.norm.cdf(d2)
+            else:
+                price = S0_arr * np.exp(-self.model.q * (self.T - self.t)) * stat.norm.cdf(d1) - self.K * np.exp(-self.model.r * (self.T - self.t)) * stat.norm.cdf(d2)
+            return price
 
     def compute_delta(self) -> float:
         if type(self.model) == mo.BlackScholes:
@@ -79,10 +96,13 @@ class EuropeanPutOption(EuropeanOption):
         plt.title(f"payoff PUT : K = {self.K}")
         plt.show()
 
-    def compute_price(self):
+    def compute_price(self, S0_arr : np.array = None):
         if type(self.model) == mo.BlackScholes:
             d1,d2 = self.model.compute_d1_d2(strike = self.K, t = self.t, T = self.T)
-            price =  self.K*np.exp(-self.model.r*(self.T - self.t )) * stat.norm.cdf(-d2) - self.S0*np.exp(-self.model.q * (self.T - self.t )) * stat.norm.cdf(-d1)
+            if S0_arr is None:
+                price =  self.K*np.exp(-self.model.r*(self.T - self.t )) * stat.norm.cdf(-d2) - self.S0*np.exp(-self.model.q * (self.T - self.t )) * stat.norm.cdf(-d1)
+            else:
+                price = self.K * np.exp(-self.model.r * (self.T - self.t)) * stat.norm.cdf(-d2) - S0_arr* np.exp( -self.model.q * (self.T - self.t)) * stat.norm.cdf(-d1)
             return price
 
     def compute_delta(self) -> float:

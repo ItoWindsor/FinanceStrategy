@@ -72,8 +72,80 @@ class OptionStrat:
         plt.title(title_str)
         plt.show()
 
-    def compute_features(self, features = ('price',)):
-        pass
+    def plot_current_PNL(self):
+        FINAL_PAYOFF = self.final_payoff()
+
+        S0 = self.products[0].model.S0
+        K_min = self.products[0].K
+        K_max = self.products[0].K
+        for i in range(1, len(self.products)):
+            K_min = np.minimum(K_min, self.products[i].K)
+            K_max = np.maximum(K_max, self.products[i].K)
+        x_min = np.minimum(S0, K_min) / 2
+        x_max = np.maximum(S0, K_max) * 4 / 3
+        n_points = int(np.maximum(x_max - x_min, 300) + 1)
+        S0_arr = np.linspace(x_min, x_max, n_points)
+
+        price_products = []
+        price_strat = 0
+        for i in range(len(self.products)):
+            price_products.append(self.products[i].compute_price() * dic_pos[self.position[i]])
+            price_strat += price_products[-1]
+        PNL_strat = price_strat + FINAL_PAYOFF(STOCK_PRICE=S0_arr)
+
+        current_pnl = np.zeros(shape=S0_arr.shape)
+        for i in range((len(self.products))):
+            current_pnl += self.products[i].compute_price(S0_arr = S0_arr) * dic_pos[self.position[i]]*(-1)
+
+        current_pnl +=  price_strat
+
+
+        fig, ax = plt.subplots()
+        ax.axvline(x=self.products[0].S0, color="grey", label="$S_0$", linestyle="--")
+        ax.plot(S0_arr, PNL_strat, label="final P&L", alpha=1, color="blue")
+        ax.plot(S0_arr, current_pnl, label = "current P&L", alpha = 1, color = "brown")
+        ax.fill_between(S0_arr, PNL_strat, where=PNL_strat > 0, facecolor='green', alpha=0.5)
+        ax.fill_between(S0_arr, PNL_strat, where=PNL_strat <= 0, facecolor='red', alpha=0.5)
+
+        plt.grid(); plt.legend() ; plt.ylabel("P&L");  plt.xlabel("stock price")
+
+        if self.strat_name is None:
+            title_str = "P&L custom strat : "
+        else:
+            title_str = f"P&L {self.strat_name} : "
+
+        for i in range(len(self.products)):
+            title_str += f"{self.products[i].K}"
+            if i < len(self.products) - 1:
+                title_str += "-"
+        title_str += f" | time to maturity : {self.products[0].T - self.products[0].t}"
+        plt.title(title_str)
+        plt.show()
+
+
+    def compute_features(self, features = ('price',)) -> dict:
+        dic_features = {"S0": self.products[0].S0}
+        for feature in features:
+            dic_features[feature] = 0
+
+        for item in features:
+            match item:
+                case "price":
+                    for prod,pos in zip(self.products,self.position):
+                        dic_features["price"] += prod.compute_price()*dic_pos[pos]*(-1)
+                case "delta":
+                    for prod in self.products:
+                        dic_features["delta"] += prod.compute_delta()*dic_pos[pos]*(-1)
+                case "gamma":
+                    for prod in self.products:
+                        dic_features["gamma"] += prod.compute_gamma()*dic_pos[pos]*(-1)
+                case "rho":
+                    for prod in self.products:
+                        dic_features["rho"] += prod.compute_rho()*dic_pos[pos]*(-1)
+                case "vega":
+                    for prod in self.products:
+                        dic_features["vega"] += prod.compute_vega()*dic_pos[pos]*(-1)
+        return dic_features
 
 class CallSpread(OptionStrat):
 
@@ -95,7 +167,7 @@ class CallSpread(OptionStrat):
         K_max = np.maximum(self.products[0].K,self.products[1].K)
         x_min = np.minimum(S0, K_min) / 2
         x_max = np.maximum(S0, K_max) * 4 / 3
-        n_points = int(np.maximum(x_max - x_min, 100) + 1)
+        n_points = int(np.maximum(x_max - x_min,300) + 1)
         S0_arr = np.linspace(x_min, x_max, n_points)
 
         plt.plot(S0_arr, final_payoff(STOCK_PRICE=S0_arr, STRIKE1 = self.products[0].K, STRIKE2 = self.products[1].K))
@@ -115,7 +187,7 @@ class CallSpread(OptionStrat):
         K_max = np.maximum(self.products[0].K, self.products[1].K)
         x_min = np.minimum(S0, K_min) / 2
         x_max = np.maximum(S0, K_max) * 4 / 3
-        n_points = int(np.maximum(x_max - x_min, 200) + 1)
+        n_points = int(np.maximum(x_max - x_min, 300) + 1)
         S0_arr = np.linspace(x_min, x_max, n_points)
 
 
